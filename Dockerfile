@@ -19,9 +19,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Build must not require a live DB / real secrets. mysql2 pools connect lazily
 # and Better Auth reads env at runtime, so a placeholder secret is enough here.
+# The secret is passed inline to the build process only (never baked into a layer).
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV BETTER_AUTH_SECRET=build-time-placeholder-secret-32-characters
-RUN npm run build
+RUN BETTER_AUTH_SECRET=build-time-placeholder-secret-32-characters npm run build
 
 # 3) runner — minimal image: Node + the traced standalone server
 FROM node:20-alpine AS runner
