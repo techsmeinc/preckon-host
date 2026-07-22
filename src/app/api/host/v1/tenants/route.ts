@@ -6,7 +6,7 @@ import { handle, list, ok, parsePage, paginate, q } from "@/lib/http";
 import { newId } from "@/lib/ids";
 import { withIdempotency } from "@/lib/idempotency";
 import { useCase } from "@/lib/usecase";
-import { stripe } from "@/lib/integrations";
+import { stripe, tenantPlane } from "@/lib/integrations";
 
 // GET /tenants — list with filters ?status ?region ?edition_id ?q (§3.6)
 export const GET = handle(async (req) => {
@@ -115,6 +115,30 @@ export const POST = handle(async (req) => {
       return { id, ...body, status };
     });
 
-    return ok(tenant, 201);
+    // §1.5 — provision the tenant's workspace on the tenant plane: create the owner
+    // in the SEPARATE tenant identity pool + seed roles/settings/entitlements.
+    // Best-effort: a tenant-plane outage must not fail the Host record (retryable).
+    let provisioning: any = null;
+    try {
+      const mods = await query<{ module_key: string }>(
+        `SELECT REPLACE(f.\`key\`,'module.','') AS module_key
+           FROM edition_feature ef JOIN feature f ON f.id = ef.feature_id
+          WHERE ef.edition_id = ? AND ef.enabled = 1 AND f.\`key\` LIKE 'module.%'`,
+        [body.edition_id]
+      );
+      provisioning = await tenantPlane.bootstrap({
+        tenantId: tenant.id,
+        tenantName: body.name,
+        ownerEmail: body.primary_contact_email,
+        ownerName: body.legal_name ?? body.name,
+        editionRef: edition[0].key,
+        licensedModules: mods.map((m) => m.module_key),
+      });
+    } catch (e) {
+      console.error("[provision] tenant-plane bootstrap failed:", (e as Error).message);
+      provisioning = { error: (e as Error).message, bootstrapped: false };
+    }
+
+    return ok({ ...tenant, provisioning }, 201);
   });
 });

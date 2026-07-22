@@ -230,7 +230,26 @@
   .cmd-list button:hover svg,.cmd-list button.sel svg{color:var(--teal-press);}
   .cmd-list .grp{font-family:var(--font-mono); font-size:9.5px; letter-spacing:.14em; color:var(--slate-400); text-transform:uppercase; padding:12px 12px 5px;}
 
-  @media(max-width:840px){ :root{--side:66px;} .side-top .wm,.env,.nav .grp,.nav a span,.side-user .nm,.side-user .rl,.side-user .out{display:none;} .nav a{justify-content:center;} .side-user{justify-content:center;} .side-top{justify-content:center;} }
+  .hamb{display:none; width:36px; height:36px; border-radius:9px; border:1px solid var(--hairline); background:var(--surface); color:var(--slate-600); place-items:center; cursor:pointer; flex:none;}
+  .hamb:hover{color:var(--ink); border-color:var(--slate-400);}
+  .nav-scrim{display:none;}
+  .nav-toggle{display:none;}
+  /* Desktop (>860px): collapse toggle shrinks the sidebar to an icon-rail. */
+  @media (min-width:861px){
+    .nav-toggle{display:grid; width:34px; height:34px; border-radius:9px; border:1px solid var(--hairline); background:var(--surface); color:var(--slate-500); place-items:center; cursor:pointer; flex:none;}
+    .nav-toggle:hover{color:var(--ink); border-color:var(--slate-400);}
+    .app.on.nav-collapsed{grid-template-columns:68px 1fr;}
+    .app.nav-collapsed .side-top .wm,
+    .app.nav-collapsed .env,
+    .app.nav-collapsed .nav .grp,
+    .app.nav-collapsed .nav a span,
+    .app.nav-collapsed .side-user .nm,
+    .app.nav-collapsed .side-user .rl,
+    .app.nav-collapsed .side-user .out{display:none;}
+    .app.nav-collapsed .nav a{justify-content:center;}
+    .app.nav-collapsed .side-top,.app.nav-collapsed .side-user{justify-content:center;}
+    .app.nav-collapsed .nav a.active::before{left:0;}
+  }
   /* ---------- EDITIONS ---------- */
   .ecards{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px;}
   @media(max-width:940px){ .ecards{grid-template-columns:1fr;} }
@@ -409,8 +428,15 @@
     .df{flex-wrap:wrap;}                              /* drawer footer buttons wrap */
     .range{display:none;}                             /* hide 7d/30d/90d toggle on phones */
   }
-  /* Below the icon-rail breakpoint (840px), give the collapsed sidebar a
-     hard width so content never gets squeezed to nothing. */
-  @media (max-width:840px){
-    .app{grid-template-columns:66px 1fr;}
+  /* Below 860px the sidebar becomes an off-canvas drawer (full labels) opened
+     by the topbar hamburger, so content is never squeezed on tablet/phone. */
+  @media (max-width:860px){
+    .app.on{grid-template-columns:1fr;}
+    .side{position:fixed; top:0; left:0; height:100dvh; width:min(264px,82vw); z-index:100;
+      transform:translateX(-100%); transition:transform .24s cubic-bezier(.4,0,.2,1); box-shadow:0 30px 80px -30px rgba(0,0,0,.5);}
+    .app.nav-open .side{transform:none;}
+    .nav-scrim{position:fixed; inset:0; background:rgba(4,10,18,.5); z-index:99; opacity:0; pointer-events:none; transition:opacity .2s;}
+    .app.nav-open .nav-scrim{opacity:1; pointer-events:auto;}
+    .hamb{display:grid;}
+    .kbd{display:none;}
   }

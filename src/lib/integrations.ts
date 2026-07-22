@@ -77,3 +77,46 @@ function hash(s: string): number {
   for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   return h;
 }
+
+// ── Tenant plane (§1.5 provisioning) ─────────────────────────────────────────
+// The Host is the control plane: when it provisions a tenant it calls the tenant
+// plane to bootstrap that tenant's IAM (owner in the tenant identity pool, roles,
+// settings, entitlement snapshot). Mirror-only when TENANT_PLANE_URL is absent.
+export interface TenantPlaneBootstrapResult {
+  tenantId: string;
+  ownerEmail: string;
+  ownerPassword: string | null;
+  alreadyBootstrapped: boolean;
+  mock?: boolean;
+}
+export const tenantPlane = {
+  live: enabled(process.env.TENANT_PLANE_URL),
+  async bootstrap(input: {
+    tenantId: string;
+    tenantName: string;
+    ownerEmail: string;
+    ownerName?: string;
+    editionRef: string;
+    licensedModules: string[];
+    features?: Record<string, boolean>;
+  }): Promise<TenantPlaneBootstrapResult> {
+    if (!this.live) {
+      console.info("[tenant-plane:mock] bootstrap", input.tenantId, input.ownerEmail);
+      return { tenantId: input.tenantId, ownerEmail: input.ownerEmail, ownerPassword: "preckon-tenant-2026", alreadyBootstrapped: false, mock: true };
+    }
+    const res = await fetch(`${process.env.TENANT_PLANE_URL}/api/internal/tenants/${input.tenantId}/bootstrap`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${process.env.INTERNAL_SERVICE_TOKEN ?? ""}` },
+      body: JSON.stringify({
+        tenant_name: input.tenantName,
+        owner: { email: input.ownerEmail, name: input.ownerName },
+        edition_ref: input.editionRef,
+        licensed_modules: input.licensedModules,
+        features: input.features,
+        idempotency_key: input.tenantId,
+      }),
+    });
+    if (!res.ok) throw new Error(`tenant-plane bootstrap failed (${res.status}): ${await res.text()}`);
+    return (await res.json()) as TenantPlaneBootstrapResult;
+  },
+};

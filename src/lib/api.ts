@@ -30,6 +30,12 @@ async function request<T>(method: string, path: string, body?: unknown, extraHea
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) {
     const e = data?.error ?? { code: "server_error", message: res.statusText, details: {} };
+    // Session expired anywhere in the console → return to the login screen instead
+    // of surfacing a scary "Authentication required" panel. (Guard against a loop
+    // on the login route itself, which lives at "/".)
+    if (res.status === 401 && typeof window !== "undefined" && window.location.pathname !== "/") {
+      window.location.href = "/";
+    }
     throw new ApiClientError(res.status, e.code, e.message, e.details);
   }
   return data as T;

@@ -318,6 +318,14 @@ export default function ConsoleLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [me, setMe] = useState<Me | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [navOpen, setNavOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => { setNavOpen(false); }, [pathname]);
+  useEffect(() => { try { setCollapsed(localStorage.getItem("preckon-host-nav-collapsed") === "1"); } catch { /* ignore */ } }, []);
+  const toggleCollapse = useCallback(() => {
+    setCollapsed((c) => { const n = !c; try { localStorage.setItem("preckon-host-nav-collapsed", n ? "1" : "0"); } catch { /* ignore */ } return n; });
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -380,7 +388,8 @@ export default function ConsoleLayout({ children }: { children: ReactNode }) {
   return (
     <MeContext.Provider value={me}>
       <ToastProvider>
-        <div className="app on">
+        <div className={"app on" + (navOpen ? " nav-open" : "") + (collapsed ? " nav-collapsed" : "")}>
+          <div className="nav-scrim" onClick={() => setNavOpen(false)} />
           <aside className="side">
             <div className="side-top">
               <svg viewBox="0 0 48 56" width="20" height="24" fill="none" aria-hidden="true">
@@ -435,16 +444,16 @@ export default function ConsoleLayout({ children }: { children: ReactNode }) {
 
           <div className="main">
             <header className="topbar">
+              <button className="hamb" aria-label="Open menu" onClick={() => setNavOpen(true)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+              </button>
+              <button className="nav-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={toggleCollapse}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" />{collapsed ? <path d="M14 9l3 3-3 3" /> : <path d="M17 9l-3 3 3 3" />}</svg>
+              </button>
               <div className="crumb">
                 <span className="dim">Host</span> / <span>{crumb}</span>
               </div>
-              <div className="kbd" title="Command palette (coming soon)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>{" "}
-                Search <span className="keys">⌘K</span>
-              </div>
+              <div style={{ marginLeft: "auto" }} />
               <button className="tb-btn" title="Toggle theme" onClick={toggleTheme}>
                 <svg className="ic-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />

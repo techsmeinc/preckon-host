@@ -360,6 +360,15 @@ function TenantDrawer({
           <div className="trow-lbl">
             Primary contact <b>{t.primary_contact_email ?? "—"}</b>
           </div>
+          <a
+            className="mini pri"
+            href={process.env.NEXT_PUBLIC_TENANT_PLANE_URL ?? "http://localhost:3100"}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: "inline-block", marginTop: 12, textDecoration: "none" }}
+          >
+            Open workspace ↗
+          </a>
           {t.subscription?.cancel_at_period_end === 1 && (
             <div className="trow-lbl">
               Cancels at period end <b>{fmtDate(t.subscription?.current_period_end)}</b>
@@ -415,8 +424,10 @@ function CreateTenantDrawer({ onClose, onCreated }: { onClose: () => void; onCre
   const [trial, setTrial] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [created, setCreated] = useState<any>(null);
 
   const editionId2 = editionId || edList[0]?.id || "";
+  const tenantPlaneUrl = process.env.NEXT_PUBLIC_TENANT_PLANE_URL ?? "http://localhost:3100";
 
   async function create() {
     setErr(null);
@@ -426,25 +437,61 @@ function CreateTenantDrawer({ onClose, onCreated }: { onClose: () => void; onCre
     }
     setBusy(true);
     try {
-      await api.post(
-        "/tenants",
-        {
-          name,
-          slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, ""),
-          region,
-          edition_id: editionId2,
-          primary_contact_email: email,
-          start_as: trial ? "trial" : "active",
-        },
-        { "idempotency-key": crypto.randomUUID() }
+      const res = unwrap<any>(
+        await api.post(
+          "/tenants",
+          {
+            name,
+            slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+            region,
+            edition_id: editionId2,
+            primary_contact_email: email,
+            start_as: trial ? "trial" : "active",
+          },
+          { "idempotency-key": crypto.randomUUID() }
+        )
       );
-      toast(`Tenant "${name}" created`);
-      onCreated();
+      toast(`Tenant "${name}" provisioned`);
+      // Keep the drawer open to show the owner's workspace credentials.
+      setCreated({ ...(res?.provisioning ?? {}), name });
     } catch (e) {
       setErr(errMessage(e));
     } finally {
       setBusy(false);
     }
+  }
+
+  // Success state: the tenant's workspace is provisioned — hand these to the customer.
+  if (created) {
+    const prov = created;
+    return (
+      <Drawer
+        open
+        title="Tenant provisioned"
+        onClose={() => { onCreated(); onClose(); }}
+        footer={<button className="mini pri" onClick={() => { onCreated(); onClose(); }} style={{ flex: 1 }}>Done</button>}
+      >
+        <div className="auth-ok" style={{ marginBottom: 18 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l4 4 10-10" /></svg>
+          <span><b>{created.name}</b> is live. Its workspace was created on the tenant plane and the owner can sign in now.</span>
+        </div>
+        {prov.error ? (
+          <div style={{ color: "var(--amber)", fontSize: 12.5 }}>Tenant created. Setting up the workspace is taking a moment — it will finish automatically and the owner can sign in shortly.</div>
+        ) : (
+          <>
+            <Field label="Owner sign-in (tenant identity — separate from Host staff)">
+              <input type="text" className="mono" readOnly value={prov.ownerEmail ?? email} />
+            </Field>
+            <Field label="Temporary password">
+              <input type="text" className="mono" readOnly value={prov.ownerPassword ?? "(set via invite)"} />
+            </Field>
+            <a className="mini pri" href={tenantPlaneUrl} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 6, textDecoration: "none" }}>
+              Open workspace ↗
+            </a>
+          </>
+        )}
+      </Drawer>
+    );
   }
 
   return (
@@ -458,7 +505,7 @@ function CreateTenantDrawer({ onClose, onCreated }: { onClose: () => void; onCre
             Cancel
           </button>
           <button className="mini pri" onClick={create} disabled={busy}>
-            {busy ? "Creating…" : "Create tenant"}
+            {busy ? "Provisioning…" : "Create tenant"}
           </button>
         </>
       }

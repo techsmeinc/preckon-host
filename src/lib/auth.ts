@@ -19,7 +19,10 @@ export const auth = betterAuth({
   // is sometimes invoked without a request, so guard for that.
   trustedOrigins: (request?: Request) => {
     const configured = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-    const base = [configured, "http://localhost:3000", "http://127.0.0.1:3000"];
+    // `http://app:3000` is the in-cluster origin the docker-compose `seed` service
+    // uses to reach this app by service name — trust it so seed:owner's sign-up
+    // isn't rejected as INVALID_ORIGIN. Browser logins still use localhost:3000.
+    const base = [configured, "http://localhost:3000", "http://127.0.0.1:3000", "http://app:3000"];
     const origin = request?.headers?.get?.("origin") ?? "";
     if (origin && /^https?:\/\/(localhost|127\.0\.0\.1|(?:192\.168|10|172\.(?:1[6-9]|2\d|3[01]))\.\d+\.\d+)(?::\d+)?$/.test(origin))
       return [...new Set([...base, origin])];

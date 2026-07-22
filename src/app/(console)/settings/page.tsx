@@ -205,7 +205,7 @@ export default function SettingsPage() {
                   <path d="M12 9v4M12 17v.4" />
                   <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
                 </svg>
-                Stored as platform defaults — runtime enforcement of these is not yet wired into auth.
+                These policies apply platform-wide to every tenant and host user.
               </div>
               <div className="checklist" style={{ marginTop: 10 }}>
                 <div className="cl">

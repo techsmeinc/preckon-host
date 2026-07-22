@@ -45,6 +45,11 @@ services:
       INTERNAL_SERVICE_TOKEN: change-me-service-token
       EMAIL_PROVIDER: postmark
       EMAIL_FROM_ADDRESS: noreply@preckon.com
+      # Provision tenants into the tenant plane (§1.5). host.docker.internal reaches
+      # the separately-composed tenant stack published on :3100. Token must match.
+      TENANT_PLANE_URL: http://host.docker.internal:3100
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "3000:3000"
 
@@ -67,7 +72,9 @@ services:
       BETTER_AUTH_URL: http://app:3000
       OWNER_EMAIL: admin@techsme.com
       OWNER_PASSWORD: preckon-admin-2026
-    command: ["npm", "run", "seed:owner"]
+    # Create the Owner staff account, then register the demo tenant (matching the
+    # tenant plane's id) so the Host lists the workspace you actually log into.
+    command: ["sh", "-c", "npm run seed:owner && npm run seed:demo-tenant"]
 
 volumes:
   db_data:

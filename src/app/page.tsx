@@ -121,18 +121,6 @@ export default function LoginPage() {
         <button className="btn btn-primary" type="submit" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </button>
-        <div className="sso-sep">or</div>
-        {/* SSO is not wired yet. Disabled rather than a fake door that would
-            drop an unauthenticated user into the console shell. */}
-        <button
-          className="btn btn-ghost"
-          type="button"
-          disabled
-          title="Single sign-on is coming soon"
-        >
-          Continue with SSO (coming soon)
-        </button>
-
         <div className="restricted">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="4" y="10" width="16" height="11" rx="2" />

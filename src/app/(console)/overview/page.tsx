@@ -138,7 +138,7 @@ export default function OverviewPage() {
             Active subs
           </div>
           <div className="v">{billing.loading ? "—" : statusCounts.active ?? 0}</div>
-          <div className="d up">billing</div>
+          <div className="d up">paying</div>
           <div className="sub">{statusCounts.trialing ?? 0} on trial</div>
         </div>
         <div className="kpi">
@@ -162,7 +162,7 @@ export default function OverviewPage() {
             Past due
           </div>
           <div className="v">{billing.loading ? "—" : statusCounts.past_due ?? 0}</div>
-          <div className="d down">{summary.health?.failed_payments ?? 0} failed</div>
+          <div className={"d " + ((statusCounts.past_due ?? 0) > 0 ? "down" : "flat")}>{summary.health?.failed_payments ?? 0} failed</div>
           <div className="sub">need follow-up</div>
         </div>
       </div>
